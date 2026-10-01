@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Torito · Práctica Oral DELE B2</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ============ APP SHELL ============ -->
+  <div id="app">
+
+    <!-- Top bar (shown after onboarding) -->
+    <header id="topbar" class="hidden">
+      <div class="brand">
+        <span class="brand-mascot" aria-hidden="true">🐂</span>
+        <span class="brand-name">Torito</span>
+        <span class="brand-sub">DELE&nbsp;B2 · Oral</span>
+      </div>
+      <div class="streak" id="streakBox" title="Tu racha de horchatas">
+        <span class="streak-cup" aria-hidden="true">🥤</span>
+        <span id="streakCount">0</span>
+      </div>
+    </header>
+
+    <!-- ============ ONBOARDING ============ -->
+    <section id="onboarding" class="screen">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="onbProgress" class="progress-fill"></div></div>
+        <button id="skipOnb" class="link-btn">Saltar introducción</button>
+      </div>
+
+      <!-- Step 0: greeting -->
+      <div class="onb-step" data-step="0">
+        <div class="mascot-hero">
+          <div class="mascot-face" aria-hidden="true">🐂</div>
+          <div class="horchata" aria-hidden="true">🥤</div>
+        </div>
+        <div class="bubble">
+          <p>¡Hola! Soy <strong>Torito</strong>, tu becerro de confianza. 🐂</p>
+          <p>Vamos a preparar juntos la <strong>prueba oral del DELE B2</strong>, con calma y una horchata bien fresquita en la mano.</p>
+          <p>Antes de empezar, cuéntame un poquito sobre ti.</p>
+        </div>
+        <button class="btn-primary" data-next>Empezar</button>
+      </div>
+
+      <!-- Step 1: placement -->
+      <div class="onb-step hidden" data-step="1">
+        <div class="mascot-row">
+          <span class="mascot-mini" aria-hidden="true">🐂</span>
+          <div class="bubble bubble-sm">
+            <p>¿Cómo te gustaría practicar hoy? No hay respuesta incorrecta.</p>
+          </div>
+        </div>
+        <div class="choice-grid" id="levelChoices">
+          <button class="choice-card" data-value="cero">
+            <span class="choice-icon">🌱</span>
+            <span class="choice-title">Empezando desde cero</span>
+            <span class="choice-desc">Quiero conocer el examen poco a poco.</span>
+          </button>
+          <button class="choice-card" data-value="b1-a-b2">
+            <span class="choice-icon">📈</span>
+            <span class="choice-title">Ya tengo B1 y quiero subir a B2</span>
+            <span class="choice-desc">Busco dar el salto al siguiente nivel.</span>
+          </button>
+          <button class="choice-card" data-value="tareas">
+            <span class="choice-icon">🎯</span>
+            <span class="choice-title">Conozco el examen, quiero practicar las tareas</span>
+            <span class="choice-desc">A entrenar las tres tareas en serio.</span>
+          </button>
+          <button class="choice-card" data-value="hablar">
+            <span class="choice-icon">💬</span>
+            <span class="choice-title">Solo quiero hablar mejor, sin examen todavía</span>
+            <span class="choice-desc">Ganar soltura y confianza al hablar.</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: topic interest -->
+      <div class="onb-step hidden" data-step="2">
+        <div class="mascot-row">
+          <span class="mascot-mini" aria-hidden="true">🐂</span>
+          <div class="bubble bubble-sm">
+            <p>¡Genial! ¿Qué temas te apetece trabajar primero? Elige los que quieras.</p>
+          </div>
+        </div>
+        <div class="choice-grid tag-grid" id="topicChoices">
+          <!-- filled by JS -->
+        </div>
+        <button class="btn-primary" data-next>Continuar</button>
+      </div>
+
+      <!-- Step 3: ready -->
+      <div class="onb-step hidden" data-step="3">
+        <div class="mascot-hero">
+          <div class="mascot-face" aria-hidden="true">🐂</div>
+          <div class="horchata" aria-hidden="true">🥤</div>
+        </div>
+        <div class="bubble">
+          <p>¡Todo listo! 🎉</p>
+          <p>Recuerda: en el examen real tendrás <strong>20 minutos de preparación</strong> para las Tareas 1 y 2, y hablarás unos <strong>15–20 minutos</strong> en total con el entrevistador.</p>
+          <p>Aquí vamos a entrenar esas tareas una a una. Tú marcas el ritmo. ¡Vamos allá!</p>
+        </div>
+        <button class="btn-primary" id="finishOnb">Ir a practicar</button>
+      </div>
+    </section>
+
+    <!-- ============ HOME / TASK PICKER ============ -->
+    <section id="home" class="screen hidden">
+      <div class="home-greet">
+        <span class="mascot-mini" aria-hidden="true">🐂</span>
+        <div class="bubble bubble-sm" id="homeGreet">
+          <p>¿Lista para hoy? Elige una tarea para empezar.</p>
+        </div>
+      </div>
+
+      <div class="task-cards">
+        <button class="task-card t1" data-task="1">
+          <span class="task-badge">Tarea 1</span>
+          <h3>Valorar propuestas (monólogo + conversación)</h3>
+          <p>Expón las ventajas e inconvenientes de unas propuestas y defiende tu postura.</p>
+          <span class="task-meta">⏱️ Prep. 20 min · 🗣️ 6–7 min</span>
+        </button>
+        <button class="task-card t2" data-task="2">
+          <span class="task-badge">Tarea 2</span>
+          <h3>Describir una fotografía</h3>
+          <p>Imagina y describe una situación a partir de una imagen, luego conversa sobre ella.</p>
+          <span class="task-meta">⏱️ Prep. 20 min (comp.) · 🗣️ 5–6 min</span>
+        </button>
+        <button class="task-card t3" data-task="3">
+          <span class="task-badge">Tarea 3</span>
+          <h3>Comentar una encuesta</h3>
+          <p>Compara tus respuestas con los datos reales y comenta las diferencias. Sin preparación.</p>
+          <span class="task-meta">⚡ Sin prep. · 🗣️ 3–4 min</span>
+        </button>
+      </div>
+
+      <div class="home-tools">
+        <button class="btn-ghost" id="simModeBtn">▶️ Simulacro completo (las 3 tareas)</button>
+        <button class="link-btn" id="resetBtn">Reiniciar progreso</button>
+      </div>
+    </section>
+
+    <!-- ============ PRACTICE SESSION ============ -->
+    <section id="session" class="screen hidden">
+      <div class="session-head">
+        <button class="link-btn" id="backHome">‹ Volver</button>
+        <span class="session-task-label" id="sessTaskLabel">Tarea</span>
+        <span class="session-phase" id="sessPhase"></span>
+      </div>
+
+      <!-- Prompt card -->
+      <div class="prompt-card" id="promptCard">
+        <h2 id="promptTitle"></h2>
+        <div id="promptBody"></div>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-zone" id="timerZone">
+        <div class="timer-label" id="timerLabel"></div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="timer-controls">
+          <button class="btn-primary" id="timerStart">Empezar preparación</button>
+          <button class="btn-ghost hidden" id="timerSkip">Saltar al habla →</button>
+        </div>
+        <p class="timer-hint" id="timerHint"></p>
+      </div>
+
+      <!-- Record / respond zone -->
+      <div class="respond-zone hidden" id="respondZone">
+        <div class="record-box">
+          <button class="btn-record" id="recBtn"><span class="rec-dot"></span> Grabar</button>
+          <span class="rec-timer" id="recTimer">00:00</span>
+          <audio id="playback" controls class="hidden"></audio>
+        </div>
+        <p class="rec-note" id="recNote">La grabación se queda solo en tu navegador. No se sube a ningún sitio.</p>
+
+        <details class="type-fallback">
+          <summary>¿Prefieres escribir tus notas o tu respuesta?</summary>
+          <textarea id="typeArea" rows="5" placeholder="Escribe aquí tus ideas, conectores o la respuesta completa…"></textarea>
+        </details>
+
+        <button class="btn-primary" id="toRubric">He terminado → autoevaluación</button>
+      </div>
+
+      <!-- Self-assessment rubric -->
+      <div class="rubric-zone hidden" id="rubricZone">
+        <div class="mascot-row">
+          <span class="mascot-mini" aria-hidden="true">🐂</span>
+          <div class="bubble bubble-sm">
+            <p>Escucha tu grabación y sé sincera contigo misma. Marca cómo te ha salido cada punto. ¡Así es como se mejora de verdad!</p>
+          </div>
+        </div>
+        <div id="rubricList"></div>
+        <div class="rubric-score" id="rubricScore"></div>
+        <textarea id="reflectArea" rows="3" placeholder="Una nota para la próxima vez (p. ej. «usar más conectores», «no quedarme en blanco»)…"></textarea>
+        <div class="rubric-actions">
+          <button class="btn-primary" id="saveSession">Guardar y terminar</button>
+          <button class="btn-ghost" id="againBtn">Otra pregunta de esta tarea</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DONE ============ -->
+    <section id="done" class="screen hidden">
+      <div class="mascot-hero">
+        <div class="mascot-face" aria-hidden="true">🐂</div>
+        <div class="horchata" aria-hidden="true">🥤</div>
+      </div>
+      <div class="bubble" id="doneMsg"></div>
+      <div class="done-stats" id="doneStats"></div>
+      <button class="btn-primary" id="doneHome">Volver al inicio</button>
+    </section>
+
+  </div>
+
+  <footer class="app-foot">
+    Hecho con cariño para Tayo · Práctica no oficial, inspirada en el formato público del DELE B2 (Instituto&nbsp;Cervantes).
+  </footer>
+
+  <script src="prompts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
