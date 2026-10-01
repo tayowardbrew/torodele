@@ -17,8 +17,11 @@
      Tarea 3 — Unprepared conversation about survey data (encuesta):
                first guess what the Spanish population answered,
                then compare with the real figures and comment.
-               ~3–4 min. (Here the figures are ILLUSTRATIVE, not
-               from any official survey — see note in README.)
+               ~3–4 min. Most items now use REAL, cited figures from
+               official Spanish sources (CIS / INE); the few with no
+               reliable real source for the exact topic keep clearly
+               labelled illustrative numbers (`invented: true`).
+               See the `source` field per item and the README.
    Preparation: 20 min total for Tareas 1 & 2 only.
    Topic areas used (real B2 themes): trabajo, educación,
    tecnología, medio ambiente, salud, viajes, consumo/dinero,
@@ -285,44 +288,55 @@ const TAREA2 = [
 ];
 
 /* ---------- TAREA 3: comentar una encuesta ----------
-   NOTE: these percentages are ILLUSTRATIVE and invented for
-   practice. They are NOT official survey data. The exercise still
-   trains the real skill: guess first, then compare and comment. */
+   Where a real, citable figure from an official Spanish source
+   (CIS / INE) was found, the item uses it and carries a `source`
+   citation shown in the app. Where no confident real figure was
+   found for the exact topic, the item keeps ILLUSTRATIVE (invented)
+   numbers and is flagged with `invented: true`. The exercise trains
+   the same real skill either way: guess first, then compare & comment.
+   The `pctLabel` field describes what the percentage means, because
+   real surveys use different structures (reason for a trip, % who do
+   something "habitually", % who did an activity, etc.) and these do
+   NOT always add up to 100. */
 const TAREA3 = [
   {
     id: "t3-redes",
     topic: "medios",
     title: "El uso de las redes sociales",
-    intro: "Esta es una encuesta sobre el uso de las redes sociales. Primero, imagine qué habrá respondido la mayoría de la población. Después compare con los datos y comente las diferencias con el entrevistador.",
-    question: "¿Para qué utiliza principalmente las redes sociales?",
+    intro: "Esta encuesta mide cuánta gente ha participado en redes sociales (Instagram, Facebook, YouTube, etc.) en los últimos tres meses. Las cifras son porcentajes de cada grupo de población, por lo que no suman 100. Imagine primero qué grupos usan más las redes y luego comente los datos.",
+    question: "¿Qué porcentaje de cada grupo ha usado redes sociales en los últimos tres meses?",
+    pctLabel: "% de cada grupo que ha participado en redes sociales",
+    source: "INE · Encuesta sobre Equipamiento y Uso de TIC en los Hogares, oleada de 2022 (nota de prensa del 29 de noviembre de 2022). Datos reales; población de 16 a 74 años. Es la última cifra INE claramente verificable sobre «redes sociales».",
     options: [
-      { text: "Para estar en contacto con amigos y familia", pct: 38 },
-      { text: "Para informarse de la actualidad", pct: 24 },
-      { text: "Para entretenerse y pasar el rato", pct: 29 },
-      { text: "Para asuntos de trabajo o estudios", pct: 9 }
+      { text: "Jóvenes de 16 a 24 años", pct: 92.6 },
+      { text: "Mujeres (16-74 años)", pct: 65.5 },
+      { text: "Población general (16-74 años)", pct: 63.2 },
+      { text: "Hombres (16-74 años)", pct: 60.9 }
     ],
     discuss: [
-      "¿En qué coinciden sus respuestas con los datos? ¿En qué se diferencian?",
-      "¿Hay algún dato que le llame especialmente la atención? ¿Por qué?",
-      "¿Cree que usa las redes de forma parecida a la mayoría?"
+      "¿Le sorprende lo alto que es el uso entre los jóvenes frente a la población general?",
+      "¿Por qué cree que las mujeres usan las redes algo más que los hombres, según el dato?",
+      "¿Usa usted las redes más o menos que la media de la población?"
     ]
   },
   {
     id: "t3-vacaciones",
     topic: "viajes",
-    title: "Cómo elegimos las vacaciones",
-    intro: "Esta encuesta pregunta sobre cómo se eligen las vacaciones. Imagine primero qué habrá respondido la mayoría y luego comente los resultados reales.",
-    question: "¿Qué es lo más importante al elegir un destino de vacaciones?",
+    title: "Por qué viajamos",
+    intro: "Esta encuesta pregunta por el motivo principal de los viajes de los españoles. Imagine primero qué habrá respondido la mayoría y luego comente los resultados reales.",
+    question: "¿Cuál es el motivo principal de sus viajes?",
+    pctLabel: "% de los viajes de los residentes en España",
+    source: "INE · Encuesta de Turismo de Residentes (FAMILITUR), 4.º trimestre de 2024 (publicada el 26 de marzo de 2025). Datos reales del motivo principal del viaje.",
     options: [
-      { text: "El precio", pct: 41 },
-      { text: "El clima y el entorno natural", pct: 27 },
-      { text: "La cultura y la gastronomía", pct: 18 },
-      { text: "Que sea un lugar tranquilo", pct: 14 }
+      { text: "Ocio, recreo y vacaciones", pct: 43.4 },
+      { text: "Visitas a familiares o amigos", pct: 39.6 },
+      { text: "Negocios y motivos profesionales", pct: 10.3 },
+      { text: "Otros motivos", pct: 6.7 }
     ],
     discuss: [
-      "¿Coinciden sus prioridades con las de la mayoría?",
-      "¿Le sorprende el peso que tiene el precio?",
-      "¿Qué factor echaría usted en falta en la encuesta?"
+      "¿Le sorprende el peso que tienen las visitas a familiares y amigos?",
+      "¿Por qué cree que viajamos tanto para ver a la familia?",
+      "¿Cuál suele ser el motivo principal de sus propios viajes?"
     ]
   },
   {
@@ -330,34 +344,38 @@ const TAREA3 = [
     topic: "trabajo",
     title: "Qué valoramos en un trabajo",
     intro: "Esta encuesta trata sobre lo que más se valora en un trabajo. Diga primero qué cree que respondió la mayoría y después compárelo con los datos.",
-    question: "¿Qué es lo que más valora de un empleo?",
+    question: "¿Qué es lo más importante a la hora de valorar un trabajo?",
+    pctLabel: "% que lo eligió como lo más importante",
+    source: "CIS · Datos de opinión nº 22 (trabajo realizado en 1999). Dato real, aunque antiguo: tenlo en cuenta al comentarlo.",
     options: [
-      { text: "Un buen salario", pct: 33 },
-      { text: "La estabilidad y la seguridad", pct: 28 },
-      { text: "Un buen ambiente con los compañeros", pct: 22 },
-      { text: "Que el trabajo sea interesante", pct: 17 }
+      { text: "La seguridad y la estabilidad en el empleo", pct: 89 },
+      { text: "Unos ingresos elevados", pct: 8 },
+      { text: "El prestigio social del trabajo", pct: 2 },
+      { text: "El poder o la autoridad que da el puesto", pct: 1 }
     ],
     discuss: [
-      "¿Su respuesta coincide con la mayoría o se aleja?",
-      "¿Cree que estas prioridades cambian con la edad?",
-      "¿Qué dato le parece más revelador sobre la sociedad actual?"
+      "¿Le sorprende el enorme peso de la seguridad frente al salario?",
+      "El dato es de 1999: ¿cree que hoy la respuesta sería distinta? ¿Por qué?",
+      "¿Qué valora usted más en un empleo?"
     ]
   },
   {
     id: "t3-medioamb",
     topic: "medioamb",
     title: "Hábitos para cuidar el medio ambiente",
-    intro: "Esta encuesta pregunta por los hábitos para cuidar el medio ambiente. Imagine qué habrá contestado la mayoría y luego comente las cifras.",
-    question: "¿Qué hace con más frecuencia para cuidar el medio ambiente?",
+    intro: "Esta encuesta pregunta por los hábitos para cuidar el medio ambiente. En este caso, el porcentaje indica cuánta gente dice hacer cada cosa «habitualmente», por lo que las cifras no suman 100. Imagine qué habrá contestado la mayoría y luego comente los datos.",
+    question: "¿Qué hace usted habitualmente para cuidar el medio ambiente?",
+    pctLabel: "% que dice hacerlo «habitualmente»",
+    source: "CIS · Estudio nº 3121, Barómetro de diciembre de 2015. Datos reales (porcentaje que declara hacer cada hábito «habitualmente»); por eso no suman 100.",
     options: [
-      { text: "Separar la basura para reciclar", pct: 44 },
-      { text: "Reducir el consumo de agua y luz", pct: 26 },
-      { text: "Usar menos el coche", pct: 17 },
-      { text: "Comprar productos sostenibles", pct: 13 }
+      { text: "Separar la basura por tipos para reciclar", pct: 70.8 },
+      { text: "Usar bombillas de bajo consumo", pct: 70.0 },
+      { text: "Desplazarse a pie o en bici por el barrio", pct: 58.9 },
+      { text: "Comprar productos ecológicos", pct: 17.1 }
     ],
     discuss: [
+      "¿Por qué cree que reciclar es mucho más habitual que comprar productos ecológicos?",
       "¿Coincide lo que hace usted con lo más habitual?",
-      "¿Por qué cree que algunos hábitos son más fáciles que otros?",
       "¿Cree que estos gestos individuales son suficientes?"
     ]
   },
@@ -365,36 +383,38 @@ const TAREA3 = [
     id: "t3-tiempo-libre",
     topic: "social",
     title: "Qué hacemos en el tiempo libre",
-    intro: "Esta encuesta trata sobre cómo pasa la gente su tiempo libre. Prediga la respuesta mayoritaria y después comente los resultados.",
-    question: "¿A qué dedica principalmente su tiempo libre?",
+    intro: "Esta encuesta trata sobre las actividades a las que la gente dedica su tiempo. Aquí el porcentaje indica cuánta gente realiza cada actividad en un día, por lo que las cifras no suman 100. Prediga la respuesta mayoritaria y después comente los resultados.",
+    question: "¿A qué actividades dedica la gente su tiempo cada día?",
+    pctLabel: "% que realiza la actividad en un día",
+    source: "INE · Encuesta de Empleo del Tiempo 2009-2010. Datos reales (porcentaje de personas que realiza cada actividad en el transcurso del día); no suman 100. Nota: el dato de «medios de comunicación» en conjunto es del 93,5%; el 88-89% corresponde específicamente a ver la televisión.",
     options: [
-      { text: "Ver series, cine o televisión", pct: 31 },
-      { text: "Quedar con amigos o familia", pct: 26 },
-      { text: "Hacer deporte o actividad física", pct: 23 },
-      { text: "Leer, estudiar o aprender algo nuevo", pct: 20 }
+      { text: "Ver la televisión", pct: 88.9 },
+      { text: "Vida social y diversión", pct: 57.7 },
+      { text: "Deporte y actividades al aire libre", pct: 39.8 },
+      { text: "Aficiones, juegos e informática", pct: 29.7 }
     ],
     discuss: [
+      "¿Le sorprende que casi todo el mundo vea la televisión a diario?",
       "¿Su forma de pasar el tiempo libre es como la de la mayoría?",
-      "¿Le gustaría cambiar algo de cómo usa su tiempo libre?",
-      "¿Cree que ha cambiado la forma de divertirse en los últimos años?"
+      "¿Cree que estos datos habrían cambiado mucho hoy en día?"
     ]
   },
   {
     id: "t3-salud",
     topic: "salud",
-    title: "Preocupaciones sobre la salud",
-    intro: "Esta encuesta pregunta por lo que más preocupa a la gente respecto a su salud. Imagine la respuesta mayoritaria y luego compárela con los datos.",
-    question: "¿Qué aspecto de su salud le preocupa más?",
+    title: "La salud mental de los españoles",
+    intro: "Esta encuesta pregunta si, en los últimos doce meses, la gente ha tenido que consultar a un profesional sanitario por un problema de salud mental o un malestar psicológico o emocional. Imagine primero qué proporción de la población habrá dicho que sí y luego comente los datos.",
+    question: "En los últimos 12 meses, ¿ha consultado a un profesional por un problema de salud mental o emocional?",
+    pctLabel: "% de la población",
+    source: "CIS · Barómetro Sanitario 2024 (para el Ministerio de Sanidad), estudio nº 8824 (total de oleadas, pregunta 8). Datos reales (N=7.623).",
     options: [
-      { text: "El estrés y la salud mental", pct: 34 },
-      { text: "La alimentación", pct: 27 },
-      { text: "La falta de ejercicio", pct: 21 },
-      { text: "El descanso y el sueño", pct: 18 }
+      { text: "No", pct: 81.7 },
+      { text: "Sí", pct: 18.2 }
     ],
     discuss: [
-      "¿Comparte usted la preocupación más votada?",
-      "¿Por qué cree que la salud mental aparece tan arriba hoy en día?",
-      "¿Qué dato le ha sorprendido más?"
+      "¿Le sorprende que casi uno de cada cinco haya necesitado consultar por salud mental?",
+      "¿Por qué cree que la salud mental se ha vuelto un tema tan presente hoy en día?",
+      "¿Cree que la gente pide ayuda con facilidad o todavía hay tabú?"
     ]
   }
 ];

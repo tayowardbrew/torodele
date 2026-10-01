@@ -13,7 +13,7 @@
 
   /* ---------- state ---------- */
   const defaultState = { onboarded:false, level:null, topics:[], streak:0,
-                         lastDay:null, sessions:[], seen:{1:[],2:[],3:[]} };
+                         lastDay:null, sessions:[], seen:{1:[],2:[],3:[]}, read:[] };
   let state = load();
 
   function load(){
@@ -24,7 +24,7 @@
   function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 
   /* ---------- screen router ---------- */
-  const screens = ["onboarding","home","session","done"];
+  const screens = ["onboarding","home","session","done","reading","article"];
   function show(id){
     screens.forEach(s => $("#"+s).classList.toggle("hidden", s!==id));
     $("#topbar").classList.toggle("hidden", id==="onboarding");
@@ -181,10 +181,14 @@
     } else {
       html += `<p>${item.intro}</p>`;
       html += `<div class="label">${item.question}</div>`;
+      if(item.pctLabel){
+        html += `<p class="survey-pct-label">${item.pctLabel}</p>`;
+      }
       html += `<table class="survey" id="surveyTable">`;
       item.options.forEach((o,i)=>{
+        const barW = Math.min(100, Number(o.pct) || 0);
         html += `<tr class="hidden-pct" data-i="${i}">
-                   <td>${o.text}<div class="bar" style="opacity:0"><i style="width:${o.pct}%"></i></div></td>
+                   <td>${o.text}<div class="bar" style="opacity:0"><i style="width:${barW}%"></i></div></td>
                    <td class="pct">${o.pct}%</td>
                  </tr>`;
       });
@@ -194,7 +198,11 @@
       html += `<div class="label" style="margin-top:14px">Comente con el entrevistador</div><ul>`;
       item.discuss.forEach(d => html += `<li>${d}</li>`);
       html += `</ul>`;
-      html += `<p class="rec-note">Nota: estos porcentajes son ilustrativos (inventados para practicar), no de una encuesta oficial.</p>`;
+      if(item.source){
+        html += `<p class="survey-source">📊 <strong>Fuente de los datos:</strong> ${item.source}</p>`;
+      } else if(item.invented){
+        html += `<p class="rec-note">Nota: estos porcentajes son ilustrativos (inventados para practicar), no de una encuesta oficial. No se encontró un dato oficial fiable para este tema concreto.</p>`;
+      }
     }
     $("#promptBody").innerHTML = html;
 
@@ -426,8 +434,195 @@
   }
 
   /* ============================================================
+     READING COMPREHENSION (noticias reales)
+     ============================================================ */
+  let readingFilterTopic = "all";
+  let curArticle = null;
+
+  function enterReading(){
+    buildReadingFilter();
+    renderArticleList();
+    const asof = $("#readingAsof");
+    if(asof){
+      asof.innerHTML = `Noticias reales recogidas de los canales RSS públicos de los medios citados el ` +
+        `<strong>${fmtDate(ARTICLES_FETCHED_ON)}</strong>. Para noticias más recientes, vuelve a ` +
+        `recoger el contenido (ver README).`;
+    }
+    show("reading");
+  }
+
+  function articlesForFilter(){
+    return readingFilterTopic === "all"
+      ? ARTICLES
+      : ARTICLES.filter(a => a.topic === readingFilterTopic);
+  }
+
+  function buildReadingFilter(){
+    const wrap = $("#readingFilter");
+    if(!wrap) return;
+    // topics actually present in the data, in a stable order
+    const present = [];
+    Object.keys(READING_TOPIC_LABELS).forEach(k=>{
+      if(ARTICLES.some(a=>a.topic===k)) present.push(k);
+    });
+    let html = `<button class="filter-chip${readingFilterTopic==="all"?" selected":""}" data-topic="all">Todas</button>`;
+    present.forEach(k=>{
+      const v = READING_TOPIC_LABELS[k];
+      html += `<button class="filter-chip${readingFilterTopic===k?" selected":""}" data-topic="${k}">${v.icon} ${v.label}</button>`;
+    });
+    wrap.innerHTML = html;
+    $$(".filter-chip", wrap).forEach(b=>{
+      b.addEventListener("click", ()=>{
+        readingFilterTopic = b.dataset.topic;
+        buildReadingFilter();
+        renderArticleList();
+      });
+    });
+  }
+
+  function renderArticleList(){
+    const list = $("#articleList");
+    if(!list) return;
+    const items = articlesForFilter();
+    $("#readCountLabel").textContent = `${items.length} ${items.length===1?"noticia":"noticias"}`;
+    list.innerHTML = "";
+    items.forEach(a=>{
+      const v = READING_TOPIC_LABELS[a.topic] || {icon:"📰", label:a.topic};
+      const done = (state.read && state.read.includes(a.id));
+      const card = document.createElement("button");
+      card.className = "article-item";
+      card.innerHTML =
+        `<span class="article-item-top">
+           <span class="article-topic-tag">${v.icon} ${v.label}</span>
+           <span class="article-item-src">${a.source}</span>
+           ${done ? `<span class="article-done" title="Ya leída">✓</span>` : ``}
+         </span>
+         <span class="article-item-title">${a.title}</span>
+         <span class="article-item-q">${a.questions.length} ${a.questions.length===1?"pregunta":"preguntas"} · 📅 ${fmtDate(a.published)}</span>`;
+      card.addEventListener("click", ()=> openArticle(a));
+      list.appendChild(card);
+    });
+  }
+
+  function openArticle(a){
+    curArticle = a;
+    const v = READING_TOPIC_LABELS[a.topic] || {icon:"📰", label:a.topic};
+    $("#articleTopicLabel").textContent = `${v.icon} ${v.label}`;
+    $("#articleSource").textContent = `${a.source} · ${fmtDate(a.published)}`;
+    $("#articleTitle").textContent = a.title;
+    $("#articleExcerpt").textContent = a.excerpt;
+    const link = $("#articleLink");
+    link.href = a.url;
+    const shortNote = $("#articleShortNote");
+    if(a.excerpt.length < 90){
+      shortNote.textContent = "El resumen es breve: para responder con seguridad, te recomendamos leer el artículo completo en el enlace de arriba.";
+      shortNote.classList.remove("hidden");
+    } else {
+      shortNote.classList.add("hidden");
+    }
+    renderQuestions(a);
+    show("article");
+  }
+
+  function renderQuestions(a){
+    const wrap = $("#questionList");
+    wrap.innerHTML = "";
+    a.questions.forEach((item, qi)=>{
+      const q = document.createElement("div");
+      q.className = "q-item";
+      let opts = "";
+      item.options.forEach((opt, oi)=>{
+        opts += `<button class="q-opt" data-q="${qi}" data-o="${oi}">${opt}</button>`;
+      });
+      q.innerHTML = `<div class="q-text">${qi+1}. ${item.q}</div>
+                     <div class="q-opts" data-q="${qi}">${opts}</div>
+                     <div class="q-explain hidden" data-q="${qi}"></div>`;
+      wrap.appendChild(q);
+    });
+    readingAnswers = {};
+    $$(".q-opt", wrap).forEach(b=>{
+      b.addEventListener("click", ()=>{
+        if(wrap.dataset.checked) return;         // locked after checking
+        const qi = b.dataset.q;
+        $$(`.q-opt[data-q="${qi}"]`, wrap).forEach(x=>x.classList.remove("sel"));
+        b.classList.add("sel");
+        readingAnswers[qi] = +b.dataset.o;
+      });
+    });
+    wrap.removeAttribute("data-checked");
+    $("#readingScore").textContent = "";
+    $("#checkAnswers").classList.remove("hidden");
+    $("#nextArticle").classList.add("hidden");
+  }
+
+  let readingAnswers = {};
+
+  function checkReadingAnswers(){
+    const a = curArticle;
+    const wrap = $("#questionList");
+    let correct = 0;
+    a.questions.forEach((item, qi)=>{
+      const chosen = readingAnswers[qi];
+      $$(`.q-opt[data-q="${qi}"]`, wrap).forEach(b=>{
+        const oi = +b.dataset.o;
+        b.classList.add("locked");
+        if(oi === item.answer) b.classList.add("correct");
+        else if(oi === chosen) b.classList.add("wrong");
+      });
+      if(chosen === item.answer) correct++;
+      const ex = wrap.querySelector(`.q-explain[data-q="${qi}"]`);
+      if(ex){
+        const got = chosen === item.answer;
+        ex.innerHTML = `${got ? "✅ ¡Correcto!" : "❌ No exactamente."} ${item.explain || ""}`;
+        ex.classList.remove("hidden");
+      }
+    });
+    wrap.dataset.checked = "1";
+    const total = a.questions.length;
+    const pct = Math.round(correct/total*100);
+    let msg;
+    if(pct===100) msg = `🥤 ¡Perfecto! ${correct}/${total}. Torito está orgulloso.`;
+    else if(pct>=60) msg = `👍 ${correct}/${total} correctas (${pct}%). ¡Muy bien!`;
+    else msg = `💪 ${correct}/${total} correctas (${pct}%). Relee el texto y vuelve a intentarlo.`;
+    $("#readingScore").textContent = msg;
+
+    // mark as read + log a lightweight session, bump streak
+    if(!state.read) state.read = [];
+    if(!state.read.includes(a.id)) state.read.push(a.id);
+    state.sessions.push({
+      date: new Date().toISOString(),
+      task: "reading",
+      promptId: a.id,
+      score: pct,
+      note: null
+    });
+    bumpStreak();
+    save();
+
+    $("#checkAnswers").classList.add("hidden");
+    $("#nextArticle").classList.remove("hidden");
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function nextArticle(){
+    const items = articlesForFilter();
+    const unread = items.filter(x => !(state.read||[]).includes(x.id) && x.id !== curArticle.id);
+    const pool = unread.length ? unread : items.filter(x=>x.id!==curArticle.id);
+    if(pool.length) openArticle(pick(pool));
+    else enterReading();
+  }
+
+  /* ============================================================
      HELPERS
      ============================================================ */
+  function fmtDate(iso){
+    // iso = "YYYY-MM-DD" -> "30 sep 2026" (es)
+    if(!iso) return "";
+    const [y,m,d] = iso.split("-").map(Number);
+    const months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    return `${d} ${months[(m||1)-1]} ${y}`;
+  }
+
   function fmt(s){ s=Math.max(0,s); const m=Math.floor(s/60), x=s%60;
                    return String(m).padStart(2,"0")+":"+String(x).padStart(2,"0"); }
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -438,12 +633,17 @@
   function init(){
     initOnboarding();
 
-    $$(".task-card").forEach(c => c.addEventListener("click", ()=>{
+    $$(".task-card[data-task]").forEach(c => c.addEventListener("click", ()=>{
       simQueue = null; startTask(+c.dataset.task);
     }));
     $("#simModeBtn").addEventListener("click", ()=>{
       simQueue = [1,2,3]; startTask(1);
     });
+    $("#readingCard").addEventListener("click", enterReading);
+    $("#readBackHome").addEventListener("click", enterHome);
+    $("#articleBack").addEventListener("click", enterReading);
+    $("#checkAnswers").addEventListener("click", checkReadingAnswers);
+    $("#nextArticle").addEventListener("click", nextArticle);
     $("#backHome").addEventListener("click", ()=>{ simQueue=null; clearInterval(timerInt); stopStream(); enterHome(); });
     $("#timerStart").addEventListener("click", startTimer);
     $("#timerSkip").addEventListener("click", goToRespond);

@@ -133,6 +133,12 @@
           <p>Compara tus respuestas con los datos reales y comenta las diferencias. Sin preparación.</p>
           <span class="task-meta">⚡ Sin prep. · 🗣️ 3–4 min</span>
         </button>
+        <button class="task-card tr" id="readingCard">
+          <span class="task-badge">Lectura</span>
+          <h3>Comprensión lectora</h3>
+          <p>Lee noticias reales en español y responde preguntas de comprensión para ganar vocabulario y nivel B2.</p>
+          <span class="task-meta">📰 Prensa real · 📖 A tu ritmo</span>
+        </button>
       </div>
 
       <div class="home-tools">
@@ -212,6 +218,48 @@
       <button class="btn-primary" id="doneHome">Volver al inicio</button>
     </section>
 
+    <!-- ============ READING: ARTICLE LIST ============ -->
+    <section id="reading" class="screen hidden">
+      <div class="session-head">
+        <button class="link-btn" id="readBackHome">‹ Volver</button>
+        <span class="session-task-label">📰 Comprensión lectora</span>
+        <span class="session-phase" id="readCountLabel"></span>
+      </div>
+      <div class="mascot-row">
+        <span class="mascot-mini" aria-hidden="true">🐂</span>
+        <div class="bubble bubble-sm">
+          <p>Elige una noticia real en español, léela con calma y pon a prueba tu comprensión. ¡Así se amplía el vocabulario de nivel B2!</p>
+        </div>
+      </div>
+      <div class="reading-filter" id="readingFilter"></div>
+      <p class="reading-asof" id="readingAsof"></p>
+      <div class="article-list" id="articleList"></div>
+    </section>
+
+    <!-- ============ READING: SINGLE ARTICLE ============ -->
+    <section id="article" class="screen hidden">
+      <div class="session-head">
+        <button class="link-btn" id="articleBack">‹ Volver a las noticias</button>
+        <span class="session-phase" id="articleTopicLabel"></span>
+      </div>
+      <div class="prompt-card article-card">
+        <div class="article-source" id="articleSource"></div>
+        <h2 id="articleTitle"></h2>
+        <p class="article-excerpt" id="articleExcerpt"></p>
+        <a id="articleLink" class="article-origin-link" target="_blank" rel="noopener">Leer el artículo completo en el medio original ↗</a>
+        <p class="rec-note" id="articleShortNote"></p>
+      </div>
+      <div class="prompt-card">
+        <div class="label">Preguntas de comprensión</div>
+        <div id="questionList"></div>
+        <div class="rubric-score" id="readingScore"></div>
+        <div class="rubric-actions">
+          <button class="btn-primary" id="checkAnswers">Comprobar respuestas</button>
+          <button class="btn-ghost hidden" id="nextArticle">Otra noticia →</button>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <footer class="app-foot">
@@ -219,6 +267,7 @@
   </footer>
 
   <script src="prompts.js"></script>
+  <script src="articles.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
