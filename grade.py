@@ -32,7 +32,7 @@ _ENDPOINT = (
 )
 # Audio + transcription + grading in one call can be slower than a text-only
 # call, so allow a longer ceiling than the CRM's text-only helper.
-_TIMEOUT = 60  # seconds
+_TIMEOUT = 90  # seconds
 
 # The six rubric criteria, matching the self-assessment UI in app.js exactly
 # (same keys, same order). Each is graded 0-5 by the model.
