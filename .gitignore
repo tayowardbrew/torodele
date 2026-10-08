@@ -1,3 +1,12 @@
 .DS_Store
 .playwright-mcp/
-*.png
+# Ignore stray screenshots at the repo root, but keep committed assets (mascot art).
+/*.png
+# Secrets and Python runtime artefacts (Flask grading backend).
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Temp audio uploaded for grading.
+grade_uploads/

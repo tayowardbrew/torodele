@@ -13,7 +13,7 @@
     <!-- Top bar (shown after onboarding) -->
     <header id="topbar" class="hidden">
       <div class="brand">
-        <span class="brand-mascot" aria-hidden="true">🐂</span>
+        <img class="brand-mascot" src="assets/mascot/torito_idle.png" alt="Torito" />
         <span class="brand-name">Torito</span>
         <span class="brand-sub">DELE&nbsp;B2 · Oral</span>
       </div>
@@ -33,8 +33,7 @@
       <!-- Step 0: greeting -->
       <div class="onb-step" data-step="0">
         <div class="mascot-hero">
-          <div class="mascot-face" aria-hidden="true">🐂</div>
-          <div class="horchata" aria-hidden="true">🥤</div>
+          <img class="mascot-img mascot-img-hero" src="assets/mascot/torito_speaking.png" alt="Torito saludando" />
         </div>
         <div class="bubble">
           <p>¡Hola! Soy <strong>Torito</strong>, tu becerro de confianza. 🐂</p>
@@ -47,7 +46,7 @@
       <!-- Step 1: placement -->
       <div class="onb-step hidden" data-step="1">
         <div class="mascot-row">
-          <span class="mascot-mini" aria-hidden="true">🐂</span>
+          <img class="mascot-mini" src="assets/mascot/torito_idle.png" alt="Torito" />
           <div class="bubble bubble-sm">
             <p>¿Cómo te gustaría practicar hoy? No hay respuesta incorrecta.</p>
           </div>
@@ -79,7 +78,7 @@
       <!-- Step 2: topic interest -->
       <div class="onb-step hidden" data-step="2">
         <div class="mascot-row">
-          <span class="mascot-mini" aria-hidden="true">🐂</span>
+          <img class="mascot-mini" src="assets/mascot/torito_idle.png" alt="Torito" />
           <div class="bubble bubble-sm">
             <p>¡Genial! ¿Qué temas te apetece trabajar primero? Elige los que quieras.</p>
           </div>
@@ -93,8 +92,7 @@
       <!-- Step 3: ready -->
       <div class="onb-step hidden" data-step="3">
         <div class="mascot-hero">
-          <div class="mascot-face" aria-hidden="true">🐂</div>
-          <div class="horchata" aria-hidden="true">🥤</div>
+          <img class="mascot-img mascot-img-hero" src="assets/mascot/torito_celebrating.png" alt="Torito celebrando" />
         </div>
         <div class="bubble">
           <p>¡Todo listo! 🎉</p>
@@ -108,7 +106,7 @@
     <!-- ============ HOME / TASK PICKER ============ -->
     <section id="home" class="screen hidden">
       <div class="home-greet">
-        <span class="mascot-mini" aria-hidden="true">🐂</span>
+        <img class="mascot-mini" src="assets/mascot/torito_idle.png" alt="Torito" />
         <div class="bubble bubble-sm" id="homeGreet">
           <p>¿Lista para hoy? Elige una tarea para empezar.</p>
         </div>
@@ -155,6 +153,12 @@
         <span class="session-phase" id="sessPhase"></span>
       </div>
 
+      <!-- Contextual mascot: reacts to the current phase (idle / listening / thinking) -->
+      <div class="mascot-stage" id="mascotStage">
+        <img class="mascot-img mascot-img-stage" id="sessMascot" src="assets/mascot/torito_idle.png" alt="Torito" />
+        <span class="mascot-caption" id="sessMascotCaption"></span>
+      </div>
+
       <!-- Prompt card -->
       <div class="prompt-card" id="promptCard">
         <h2 id="promptTitle"></h2>
@@ -186,13 +190,45 @@
           <textarea id="typeArea" rows="5" placeholder="Escribe aquí tus ideas, conectores o la respuesta completa…"></textarea>
         </details>
 
-        <button class="btn-primary" id="toRubric">He terminado → autoevaluación</button>
+        <button class="btn-primary" id="toRubric">He terminado → corregir</button>
       </div>
 
-      <!-- Self-assessment rubric -->
-      <div class="rubric-zone hidden" id="rubricZone">
+      <!-- AI grading: loading state (Torito "thinking") -->
+      <div class="grading-zone hidden" id="gradingZone">
         <div class="mascot-row">
-          <span class="mascot-mini" aria-hidden="true">🐂</span>
+          <img class="mascot-mini" src="assets/mascot/torito_thinking.png" alt="Torito pensando" />
+          <div class="bubble bubble-sm">
+            <p id="gradingMsg">Torito está escuchando tu grabación y preparando tu corrección…</p>
+          </div>
+        </div>
+        <div class="grading-spinner" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+
+      <!-- AI grading: results -->
+      <div class="airesult-zone hidden" id="aiResultZone">
+        <div class="mascot-row">
+          <img class="mascot-mini" id="aiResultMascot" src="assets/mascot/torito_celebrating.png" alt="Torito" />
+          <div class="bubble bubble-sm">
+            <p id="aiSummary"></p>
+          </div>
+        </div>
+        <div class="ai-score" id="aiScore"></div>
+        <details class="ai-transcript" id="aiTranscriptWrap">
+          <summary>Ver lo que Torito ha escuchado (transcripción)</summary>
+          <p id="aiTranscript" class="ai-transcript-text"></p>
+        </details>
+        <div id="aiCriteriaList"></div>
+        <div class="rubric-actions">
+          <button class="btn-primary" id="aiSave">Guardar y terminar</button>
+          <button class="btn-ghost" id="aiAgain">Otra pregunta de esta tarea</button>
+        </div>
+      </div>
+
+      <!-- Self-assessment rubric (fallback when AI grading is unavailable, or on request) -->
+      <div class="rubric-zone hidden" id="rubricZone">
+        <div class="rubric-fallback-note hidden" id="rubricFallbackNote"></div>
+        <div class="mascot-row">
+          <img class="mascot-mini" src="assets/mascot/torito_idle.png" alt="Torito" />
           <div class="bubble bubble-sm">
             <p>Escucha tu grabación y sé sincera contigo misma. Marca cómo te ha salido cada punto. ¡Así es como se mejora de verdad!</p>
           </div>
@@ -210,8 +246,7 @@
     <!-- ============ DONE ============ -->
     <section id="done" class="screen hidden">
       <div class="mascot-hero">
-        <div class="mascot-face" aria-hidden="true">🐂</div>
-        <div class="horchata" aria-hidden="true">🥤</div>
+        <img class="mascot-img mascot-img-hero" id="doneMascot" src="assets/mascot/torito_celebrating.png" alt="Torito celebrando" />
       </div>
       <div class="bubble" id="doneMsg"></div>
       <div class="done-stats" id="doneStats"></div>
@@ -226,7 +261,7 @@
         <span class="session-phase" id="readCountLabel"></span>
       </div>
       <div class="mascot-row">
-        <span class="mascot-mini" aria-hidden="true">🐂</span>
+        <img class="mascot-mini" src="assets/mascot/torito_speaking.png" alt="Torito" />
         <div class="bubble bubble-sm">
           <p>Elige una noticia real en español, léela con calma y pon a prueba tu comprensión. ¡Así se amplía el vocabulario de nivel B2!</p>
         </div>

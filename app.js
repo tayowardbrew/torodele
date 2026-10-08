@@ -128,7 +128,10 @@
   function startTask(task){
     const item = pickPrompt(task);
     cur = { task, item };
+    lastAiGrade = null;
+    hideGradingZones();
     renderPrompt();
+    setMascot("idle");
     show("session");
   }
 
@@ -270,12 +273,35 @@
     window.scrollTo({top:0, behavior:"smooth"});
   }
 
+  /* ---------- contextual session mascot ---------- */
+  // pose -> {src, caption}. Caption is light instructional copy ("Torito is ...").
+  const MASCOT = {
+    idle:        {src:"assets/mascot/torito_idle.png",        cap:""},
+    listening:   {src:"assets/mascot/torito_listening.png",   cap:"Torito te está escuchando…"},
+    speaking:    {src:"assets/mascot/torito_speaking.png",     cap:""},
+    thinking:    {src:"assets/mascot/torito_thinking.png",     cap:"Torito está pensando…"},
+    celebrating: {src:"assets/mascot/torito_celebrating.png",  cap:"¡Muy bien!"},
+    encouraging: {src:"assets/mascot/torito_encouraging.png",  cap:"¡Vas por buen camino!"}
+  };
+  function setMascot(pose){
+    const m = MASCOT[pose] || MASCOT.idle;
+    const img = $("#sessMascot");
+    if(!img) return;
+    img.src = m.src;
+    img.alt = "Torito";
+    img.classList.remove("listening","thinking");
+    if(pose==="listening") img.classList.add("listening");
+    if(pose==="thinking")  img.classList.add("thinking");
+    $("#sessMascotCaption").textContent = m.cap;
+  }
+
   /* ---------- recorder (MediaRecorder) ---------- */
   let mediaRec = null, chunks = [], recInt = null, recSecs = 0, stream = null;
+  let lastBlob = null, lastMime = null;   // kept for AI grading
 
   function resetRecorder(){
     stopStream();
-    chunks = []; recSecs = 0;
+    chunks = []; recSecs = 0; lastBlob = null; lastMime = null;
     $("#recTimer").textContent = "00:00";
     const pb = $("#playback"); pb.classList.add("hidden"); pb.removeAttribute("src");
     const btn = $("#recBtn");
@@ -283,6 +309,7 @@
     btn.disabled = false;
     btn.innerHTML = `<span class="rec-dot"></span> Grabar`;
     $("#typeArea").value = "";
+    setMascot("idle");
   }
   function stopStream(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
 
@@ -309,18 +336,22 @@
     mediaRec.onstop = ()=>{
       clearInterval(recInt);
       stopStream();
-      const blob = new Blob(chunks, {type: mediaRec.mimeType || "audio/webm"});
+      const type = mediaRec.mimeType || "audio/webm";
+      const blob = new Blob(chunks, {type});
+      lastBlob = blob; lastMime = type;
       const url = URL.createObjectURL(blob);
       const pb = $("#playback");
       pb.src = url; pb.classList.remove("hidden");
       btn.classList.remove("recording");
       btn.innerHTML = `<span class="rec-dot"></span> Grabar de nuevo`;
+      setMascot("idle");
     };
     mediaRec.start();
     recSecs = 0; $("#recTimer").textContent = "00:00";
     recInt = setInterval(()=>{ recSecs++; $("#recTimer").textContent = fmt(recSecs); }, 1000);
     btn.classList.add("recording");
     btn.innerHTML = `<span class="rec-dot"></span> Detener`;
+    setMascot("listening");
   }
 
   /* ---------- rubric (self-assessment, B2-aligned) ---------- */
@@ -383,11 +414,186 @@
     el.textContent = msg;
   }
 
-  function goToRubric(){
-    $("#respondZone").classList.add("hidden");
+  function showSelfAssessment(noteHtml){
+    hideGradingZones();
+    const note = $("#rubricFallbackNote");
+    if(noteHtml){ note.innerHTML = noteHtml; note.classList.remove("hidden"); }
+    else { note.classList.add("hidden"); note.innerHTML = ""; }
     $("#rubricZone").classList.remove("hidden");
     buildRubric();
+    setMascot("idle");
     window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function hideGradingZones(){
+    $("#respondZone").classList.add("hidden");
+    $("#gradingZone").classList.add("hidden");
+    $("#aiResultZone").classList.add("hidden");
+    $("#rubricZone").classList.add("hidden");
+  }
+
+  /* ---------- AI grading ---------- */
+  let aiAvailable = null;   // null=unknown, true/false once probed
+
+  async function probeAiAvailable(){
+    // Best-effort: if we're running from file:// or without the backend, this
+    // throws and we simply treat AI grading as unavailable.
+    try{
+      const r = await fetch("/api/grade-status", {cache:"no-store"});
+      if(!r.ok) return false;
+      const j = await r.json();
+      return !!j.available;
+    }catch(e){ return false; }
+  }
+
+  async function goToRubric(){
+    // Decide: AI grading (if a recording exists and the backend is reachable),
+    // else fall straight back to the self-assessment rubric.
+    if(aiAvailable === null) aiAvailable = await probeAiAvailable();
+
+    if(!lastBlob){
+      // Nothing recorded (e.g. typed-only practice) -> self-assessment.
+      showSelfAssessment(aiAvailable
+        ? "No hay ninguna grabación para corregir, así que esta vez te toca autoevaluarte. 🎙️"
+        : "");
+      return;
+    }
+    if(!aiAvailable){
+      showSelfAssessment("La corrección automática no está disponible ahora mismo — evalúate tú misma esta vez. 💪");
+      return;
+    }
+    await runAiGrading();
+  }
+
+  async function runAiGrading(){
+    hideGradingZones();
+    $("#gradingZone").classList.remove("hidden");
+    setMascot("thinking");
+    window.scrollTo({top:0, behavior:"smooth"});
+
+    const fd = new FormData();
+    const ext = (lastMime && lastMime.indexOf("ogg")>=0) ? "ogg" : "webm";
+    fd.append("audio", lastBlob, "answer."+ext);
+    fd.append("mime", lastMime || "audio/webm");
+    fd.append("task", (TASK_META[cur.task] && TASK_META[cur.task].label) || ("Tarea "+cur.task));
+    fd.append("prompt", promptTextForGrading());
+
+    let data = null;
+    try{
+      const r = await fetch("/api/grade", {method:"POST", body:fd});
+      data = await r.json();
+    }catch(e){
+      data = {ok:false, error:"network"};
+    }
+
+    if(!data || !data.ok || !data.grade){
+      // Soft-fail: drop back to self-assessment with a friendly note.
+      showSelfAssessment("La corrección automática no ha funcionado esta vez — no pasa nada, evalúate tú misma. 💪");
+      return;
+    }
+    renderAiResult(data.grade);
+  }
+
+  function promptTextForGrading(){
+    // Compact, trusted description of what she was answering (for context only).
+    const it = cur.item || {};
+    const bits = [it.title, it.situation, it.scene, it.intro, it.question].filter(Boolean);
+    return bits.join(" — ").slice(0, 1500);
+  }
+
+  // Map a 0-5 criterion score to a small qualitative word (Spanish UI label).
+  function scoreWord(s){
+    if(s>=5) return "Excelente";
+    if(s>=4) return "Muy bien";
+    if(s>=3) return "Bien (B2)";
+    if(s>=2) return "Casi";
+    if(s>=1) return "Mejorable";
+    return "A practicar";
+  }
+
+  let lastAiGrade = null;   // kept so saveSession can record the AI score
+
+  function renderAiResult(grade){
+    lastAiGrade = grade;
+    hideGradingZones();
+    $("#aiResultZone").classList.remove("hidden");
+
+    const pct = Number(grade.overall_pct) || 0;
+    const good = pct >= 65 && !grade.no_speech;
+    // Celebrating on a strong result; encouraging (supportive) on a lower one.
+    const pose = good ? "celebrating" : "encouraging";
+    $("#aiResultMascot").src = MASCOT[pose].src;
+    setMascot(pose);
+
+    $("#aiSummary").textContent = grade.summary ||
+      (grade.no_speech
+        ? "No he podido oír tu voz con claridad. ¡Inténtalo otra vez y habla cerca del micrófono!"
+        : "¡Buen intento! Sigue practicando.");
+
+    const emoji = grade.no_speech ? "🎙️" : (pct>=85?"🥤":(pct>=65?"👍":"💪"));
+    $("#aiScore").textContent = grade.no_speech
+      ? "🎙️ No se detectó habla — vuelve a grabar cuando quieras."
+      : `${emoji} Valoración de Torito (IA): ${pct}%`;
+
+    // Transcript
+    const tw = $("#aiTranscriptWrap");
+    if(grade.transcript && grade.transcript.trim()){
+      $("#aiTranscript").textContent = "«" + grade.transcript.trim() + "»";
+      tw.classList.remove("hidden");
+    } else {
+      tw.classList.add("hidden");
+    }
+
+    // Per-criterion bars + feedback
+    const max = Number(grade.max_per) || 5;
+    const wrap = $("#aiCriteriaList"); wrap.innerHTML = "";
+    const order = ["coherencia","fluidez","amplitud","gramatica","conectores","interaccion"];
+    order.forEach(k=>{
+      const c = grade.criteria && grade.criteria[k];
+      if(!c) return;
+      const sc = Math.max(0, Math.min(max, Number(c.score)||0));
+      const w = Math.round(sc/max*100);
+      const div = document.createElement("div");
+      div.className = "ai-crit";
+      div.innerHTML =
+        `<div class="ai-crit-head">
+           <span class="ai-crit-title">${c.label || k}</span>
+           <span class="ai-crit-score">${sc}/${max} · ${scoreWord(sc)}</span>
+         </div>
+         <div class="ai-crit-bar"><div class="ai-crit-fill" style="width:0%"></div></div>
+         <div class="ai-crit-fb">${escapeHtml(c.feedback||"")}</div>`;
+      wrap.appendChild(div);
+      // animate the bar fill after insert
+      requestAnimationFrame(()=>{ const f=div.querySelector(".ai-crit-fill"); if(f) f.style.width=w+"%"; });
+    });
+
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, ch =>
+      ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  }
+
+  function saveAiSession(){
+    state.sessions.push({
+      date: new Date().toISOString(),
+      task: cur.task,
+      promptId: cur.item.id,
+      score: (lastAiGrade && !lastAiGrade.no_speech) ? (Number(lastAiGrade.overall_pct)||null) : null,
+      note: null,
+      graded_by: "ai"
+    });
+    bumpStreak();
+    save();
+    stopStream();
+    lastAiGrade = null;
+    if(simQueue){
+      const idx = simQueue.indexOf(cur.task);
+      if(idx < simQueue.length-1){ startTask(simQueue[idx+1]); return; }
+      simQueue = null;
+    }
+    showDone();
   }
 
   function saveSession(){
@@ -427,6 +633,10 @@
     $("#doneMsg").innerHTML = `<p>${pick(msgs)}</p>`;
     const last = state.sessions.slice(-5).filter(s=>s.score!=null);
     const avg = last.length ? Math.round(last.reduce((a,b)=>a+b.score,0)/last.length) : null;
+    const dm = $("#doneMascot");
+    if(dm) dm.src = (avg!=null && avg<65)
+      ? "assets/mascot/torito_encouraging.png"
+      : "assets/mascot/torito_celebrating.png";
     $("#doneStats").innerHTML =
       `Sesiones totales: <strong>${total}</strong> · Racha: <strong>${state.streak||0}</strong> 🥤` +
       (avg!=null ? `<br>Media de tus últimas valoraciones: <strong>${avg}%</strong>` : "");
@@ -651,6 +861,8 @@
     $("#toRubric").addEventListener("click", goToRubric);
     $("#saveSession").addEventListener("click", saveSession);
     $("#againBtn").addEventListener("click", ()=> startTask(cur.task));
+    $("#aiSave").addEventListener("click", saveAiSession);
+    $("#aiAgain").addEventListener("click", ()=> startTask(cur.task));
     $("#doneHome").addEventListener("click", enterHome);
     $("#resetBtn").addEventListener("click", ()=>{
       if(confirm("¿Seguro que quieres borrar tu progreso (racha, sesiones y preferencias)?")){

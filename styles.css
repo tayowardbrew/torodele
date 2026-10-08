@@ -6,6 +6,7 @@
 :root{
   --cream:      #fbf3e6;   /* horchata cream background */
   --cream-2:    #f5e7d0;   /* card tint */
+  --mascot-bg:  #faf0da;   /* matches the mascot illustrations' own cream background */
   --terracotta: #c85a3c;   /* primary accent */
   --terracotta-d:#a8462d;
   --clay:       #e08a5b;   /* secondary warm */
@@ -43,8 +44,9 @@ body{
   display:flex;justify-content:space-between;align-items:center;
   padding:16px 4px 10px;margin-bottom:8px;
 }
-.brand{display:flex;align-items:baseline;gap:8px;}
-.brand-mascot{font-size:1.6rem;}
+.brand{display:flex;align-items:center;gap:8px;}
+.brand-mascot{width:40px;height:40px;object-fit:contain;border-radius:10px;
+  background:var(--mascot-bg);border:1px solid var(--line);}
 .brand-name{font-weight:800;color:var(--terracotta-d);font-size:1.25rem;letter-spacing:.3px;}
 .brand-sub{color:var(--muted);font-size:.8rem;font-weight:600;}
 .streak{
@@ -63,14 +65,30 @@ body{
 .progress-bar{flex:1;height:10px;background:var(--cream-2);border-radius:999px;overflow:hidden;border:1px solid var(--line);}
 .progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--clay),var(--terracotta));transition:width .4s ease;border-radius:999px;}
 
-/* ---------- mascot ---------- */
+/* ---------- mascot (illustrated PNGs) ---------- */
 .mascot-hero{text-align:center;margin:10px 0 4px;position:relative;}
-.mascot-face{font-size:4.5rem;display:inline-block;animation:bob 3s ease-in-out infinite;}
-.horchata{font-size:2rem;position:relative;top:-10px;left:-6px;}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-8px) rotate(2deg);}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-1.5deg);}50%{transform:translateY(-8px) rotate(1.5deg);}}
+
+/* Shared: each image sits on its own cream background so any slight mismatch
+   with the page is a non-issue; a soft rounded card frames it. Aspect ratio is
+   always preserved via object-fit:contain. */
+.mascot-img{display:inline-block;object-fit:contain;background:var(--mascot-bg);
+  border:2px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+.mascot-img-hero{width:180px;height:180px;padding:6px;animation:bob 3s ease-in-out infinite;}
+
 .mascot-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;}
-.mascot-mini{font-size:2rem;flex:0 0 auto;}
+/* mini mascot used beside speech bubbles */
+img.mascot-mini{width:52px;height:52px;flex:0 0 auto;object-fit:contain;
+  background:var(--mascot-bg);border:2px solid var(--line);border-radius:14px;}
 .home-greet{display:flex;gap:10px;align-items:flex-start;margin:4px 0 20px;}
+
+/* Contextual mascot "stage" during a practice session */
+.mascot-stage{display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0 18px;}
+.mascot-img-stage{width:132px;height:132px;padding:5px;transition:opacity .2s ease;}
+.mascot-img-stage.listening{animation:pulse 1.1s ease-in-out infinite;}
+.mascot-img-stage.thinking{animation:bob 2.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:var(--shadow);}50%{box-shadow:0 0 0 6px rgba(200,90,60,.18),var(--shadow);}}
+.mascot-caption{font-size:.85rem;font-weight:700;color:var(--muted);min-height:1.2em;}
 
 /* ---------- speech bubble ---------- */
 .bubble{
@@ -218,6 +236,32 @@ textarea:focus{outline:none;border-color:var(--clay);}
 .rubric-opts button.sel{background:var(--terracotta);color:#fff;border-color:var(--terracotta);}
 .rubric-score{text-align:center;font-weight:800;color:var(--terracotta-d);font-size:1.1rem;margin:14px 0;}
 .rubric-actions{display:flex;flex-direction:column;gap:10px;}
+.rubric-fallback-note{background:#fff5e8;border:1px solid var(--gold);border-radius:12px;
+  padding:10px 14px;margin-bottom:14px;font-size:.9rem;color:var(--cinnamon);font-weight:600;}
+
+/* ---------- AI grading ---------- */
+.grading-zone{background:#fff;border:2px solid var(--line);border-radius:var(--radius);
+  padding:20px;margin-bottom:18px;box-shadow:var(--shadow);}
+.grading-spinner{display:flex;justify-content:center;gap:8px;margin:8px 0 2px;}
+.grading-spinner span{width:11px;height:11px;border-radius:50%;background:var(--clay);
+  animation:gbounce 1s ease-in-out infinite;}
+.grading-spinner span:nth-child(2){animation-delay:.16s;}
+.grading-spinner span:nth-child(3){animation-delay:.32s;}
+@keyframes gbounce{0%,80%,100%{transform:scale(.5);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+
+.airesult-zone{background:#fff;border:2px solid var(--line);border-radius:var(--radius);
+  padding:20px;margin-bottom:18px;box-shadow:var(--shadow);}
+.ai-score{text-align:center;font-weight:800;color:var(--terracotta-d);font-size:1.15rem;margin:6px 0 16px;}
+.ai-transcript{border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin-bottom:14px;background:var(--cream);}
+.ai-transcript summary{cursor:pointer;font-weight:700;color:var(--cinnamon);font-size:.9rem;}
+.ai-transcript-text{font-size:.9rem;color:var(--ink);font-style:italic;margin:8px 0 2px;}
+.ai-crit{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;}
+.ai-crit-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;}
+.ai-crit-title{font-weight:800;color:var(--cinnamon);}
+.ai-crit-score{font-weight:800;color:var(--terracotta-d);font-size:.95rem;white-space:nowrap;}
+.ai-crit-bar{height:8px;border-radius:999px;background:var(--cream-2);overflow:hidden;border:1px solid var(--line);margin-bottom:8px;}
+.ai-crit-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--clay),var(--terracotta));transition:width .5s ease;}
+.ai-crit-fb{font-size:.88rem;color:var(--ink);}
 
 /* ---------- done ---------- */
 .done-stats{text-align:center;color:var(--cinnamon);font-weight:700;margin:10px 0 20px;}
