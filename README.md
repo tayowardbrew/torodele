@@ -1,10 +1,22 @@
 # Torito · Práctica Oral DELE B2
 
-A warm, friendly, self-contained web app to practise the **DELE B2 oral exam**
-(*Prueba de Expresión e Interacción Orales*), guided by **Torito**, a baby-bull
-mascot, with a horchata-cup progress motif.
+A warm, friendly web app to practise the **DELE B2 oral exam** (*Prueba de
+Expresión e Interacción Orales*), guided by **Torito**, a baby-bull mascot,
+with a horchata-cup progress motif.
 
-Built for Tayo. No backend, no accounts, no paid APIs.
+Built for Tayo. Runs fully client-side (no accounts, progress saved locally)
+with one small optional backend: a Flask proxy that calls Gemini server-side
+for real AI speech grading, so the API key is never exposed in the browser.
+
+## Live demo
+
+**https://toritodele.duckdns.org** (password-protected to limit cost exposure
+on the AI grading, not because the code is private)
+- Username: `tayo`
+- Password: `EjfiAhash3qHgIGh`
+
+AI grading is capped at a hard daily spend limit server-side, independent of
+the login.
 
 ## How to run
 
@@ -122,10 +134,12 @@ regenerate `articles.js`:
     Verify the numbers against the cited studies if in doubt — some sources are
     older (the job-values one is from 1999; TIC is 2022; the newest INE TIC notes
     dropped the social-media headline line, so 2022 is the latest clean figure).
-- There is **no AI grading**. Meaningful automated feedback would need a paid
-  speech-to-text + language model service. Instead the app uses an honest
-  **self-assessment rubric** against B2 criteria after you review your own
-  recording. This is the one deliberate simplification.
+- **AI grading** (optional) is available when the small Flask backend is
+  running with a Gemini API key configured (see the live demo above) — it
+  transcribes and grades the recording server-side. Without the backend
+  running (e.g. opening `index.html` directly), the app soft-fails to an
+  honest **self-assessment rubric** against B2 criteria instead, so it's
+  never blocking.
 - All content, copy and assets are original. The app is inspired only in general
   spirit/structure by a referenced site; no third-party code/text/assets reused.
 
