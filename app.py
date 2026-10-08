@@ -150,4 +150,9 @@ def api_grade():
 
 if __name__ == "__main__":
     # 5001 so it doesn't clash with the CRM project on 5000.
-    app.run(host="127.0.0.1", port=5001, debug=False)
+    # Defaults to loopback-only for local dev; a containerized deploy can set
+    # FLASK_HOST=0.0.0.0 so it's reachable over the container's internal
+    # network (still never exposed directly to the internet - only ever
+    # reached via Caddy's reverse proxy sitting in front of it).
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    app.run(host=host, port=5001, debug=False)
