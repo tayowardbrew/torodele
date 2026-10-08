@@ -4,7 +4,7 @@ A warm, friendly web app to practise the **DELE B2 oral exam** (*Prueba de
 Expresión e Interacción Orales*), guided by **Torito**, a baby-bull mascot,
 with a horchata-cup progress motif.
 
-Built for Tayo. Runs fully client-side (no accounts, progress saved locally)
+Runs fully client-side (no accounts, progress saved locally)
 with one small optional backend: a Flask proxy that calls Gemini server-side
 for real AI speech grading, so the API key is never exposed in the browser.
 
