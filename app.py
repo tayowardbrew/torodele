@@ -22,18 +22,46 @@ import grade
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Simple daily cap on AI-graded calls, independent of the basic-auth layer in
-# front of this deploy. Defense in depth: if the URL/password ever leaked,
-# this stops a runaway/abusive loop from burning through the Gemini quota.
+# Real daily SPEND cap (not just a request count), independent of the
+# basic-auth layer in front of this deploy. Defense in depth: if the
+# URL/password ever leaked, this stops a runaway/abusive loop from burning
+# through the Gemini quota.
+#
+# Cost model (gemini-flash-latest, checked against Google's published rates):
+#   audio input  ~ $1.00 / 1M tokens, audio tokenizes at ~32 tokens/sec
+#   text output  ~ small structured JSON grade, budgeted flat per call
+# So estimated cost per call ~= (audio_seconds * 32 / 1_000_000) * AUDIO_USD_PER_M
+#                                + OUTPUT_USD_FLAT
+# Hard-stopped once today's running total would cross DAILY_CAP_GBP, converted
+# to USD with a deliberately conservative (low) GBP->USD rate so the cap
+# triggers a little early rather than a little late.
 _RATE_LIMIT_FILE = os.path.join(BASE_DIR, ".rate_limit.json")
-_DAILY_CAP = 60
+_DAILY_CAP_GBP = 1.00
+_GBP_TO_USD = 1.20  # conservative (under real-world rate) - caps a bit early, not late
+_DAILY_CAP_USD = _DAILY_CAP_GBP * _GBP_TO_USD
+_AUDIO_TOKENS_PER_SEC = 32
+_AUDIO_USD_PER_M_TOKENS = 1.00
+_OUTPUT_USD_FLAT_PER_CALL = 0.002  # small structured JSON response, budgeted flat
+# Rough bitrate assumption for the browser's recorded blob (webm/opus voice
+# recording), used only to estimate audio duration from upload size when the
+# client doesn't report it - deliberately on the high side (over-estimates
+# duration/cost) so the cap errs toward stopping early, not late.
+_ASSUMED_AUDIO_BITRATE_BPS = 24_000
 
 
-def _check_and_bump_rate_limit():
-    """Returns True if under the daily cap (and bumps the counter), False if
-    the cap's been hit for today."""
+def _estimate_call_cost_usd(audio_byte_count):
+    est_seconds = (audio_byte_count * 8) / _ASSUMED_AUDIO_BITRATE_BPS
+    audio_tokens = est_seconds * _AUDIO_TOKENS_PER_SEC
+    audio_cost = (audio_tokens / 1_000_000) * _AUDIO_USD_PER_M_TOKENS
+    return audio_cost + _OUTPUT_USD_FLAT_PER_CALL
+
+
+def _check_and_bump_spend_cap(audio_byte_count):
+    """Returns True if today's estimated spend (including this call) stays
+    under the cap, and records it. Returns False if this call would push
+    today's total over the cap."""
     today = time.strftime("%Y-%m-%d")
-    state = {"date": today, "count": 0}
+    state = {"date": today, "spend_usd": 0.0, "calls": 0}
     try:
         with open(_RATE_LIMIT_FILE, "r", encoding="utf-8") as fh:
             saved = json.load(fh)
@@ -41,9 +69,11 @@ def _check_and_bump_rate_limit():
             state = saved
     except (FileNotFoundError, json.JSONDecodeError):
         pass
-    if state["count"] >= _DAILY_CAP:
+    call_cost = _estimate_call_cost_usd(audio_byte_count)
+    if state["spend_usd"] + call_cost > _DAILY_CAP_USD:
         return False
-    state["count"] += 1
+    state["spend_usd"] += call_cost
+    state["calls"] += 1
     with open(_RATE_LIMIT_FILE, "w", encoding="utf-8") as fh:
         json.dump(state, fh)
     return True
@@ -126,14 +156,15 @@ def api_grade():
     if not grade.is_configured():
         return jsonify({"ok": False, "error": "AI grading not configured on server"})
 
-    if not _check_and_bump_rate_limit():
-        return jsonify({"ok": False, "error": f"Daily AI-grading cap ({_DAILY_CAP}) reached — try again tomorrow, or use self-assessment for now."})
-
     f = request.files.get("audio")
     if f is None:
         return jsonify({"ok": False, "error": "no audio file in request"})
 
     audio_bytes = f.read()
+
+    if not _check_and_bump_spend_cap(len(audio_bytes)):
+        return jsonify({"ok": False, "error": f"Daily AI-grading spend cap (£{_DAILY_CAP_GBP:.2f}) reached — try again tomorrow, or use self-assessment for now."})
+
     mime = (request.form.get("mime") or f.mimetype or "").strip()
     task_label = (request.form.get("task") or "").strip()[:200]
     prompt_text = (request.form.get("prompt") or "").strip()[:2000]
