@@ -14,11 +14,39 @@ index.html directly from disk; AI grading simply soft-fails to the existing
 self-assessment rubric when it can't reach /api/grade.
 """
 import os
+import json
+import time
 from flask import Flask, request, jsonify, send_from_directory, abort
 
 import grade
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Simple daily cap on AI-graded calls, independent of the basic-auth layer in
+# front of this deploy. Defense in depth: if the URL/password ever leaked,
+# this stops a runaway/abusive loop from burning through the Gemini quota.
+_RATE_LIMIT_FILE = os.path.join(BASE_DIR, ".rate_limit.json")
+_DAILY_CAP = 60
+
+
+def _check_and_bump_rate_limit():
+    """Returns True if under the daily cap (and bumps the counter), False if
+    the cap's been hit for today."""
+    today = time.strftime("%Y-%m-%d")
+    state = {"date": today, "count": 0}
+    try:
+        with open(_RATE_LIMIT_FILE, "r", encoding="utf-8") as fh:
+            saved = json.load(fh)
+        if saved.get("date") == today:
+            state = saved
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    if state["count"] >= _DAILY_CAP:
+        return False
+    state["count"] += 1
+    with open(_RATE_LIMIT_FILE, "w", encoding="utf-8") as fh:
+        json.dump(state, fh)
+    return True
 
 
 def _load_dotenv():
@@ -97,6 +125,9 @@ def api_grade():
     """
     if not grade.is_configured():
         return jsonify({"ok": False, "error": "AI grading not configured on server"})
+
+    if not _check_and_bump_rate_limit():
+        return jsonify({"ok": False, "error": f"Daily AI-grading cap ({_DAILY_CAP}) reached — try again tomorrow, or use self-assessment for now."})
 
     f = request.files.get("audio")
     if f is None:

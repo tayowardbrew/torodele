@@ -10,3 +10,5 @@ __pycache__/
 venv/
 # Temp audio uploaded for grading.
 grade_uploads/
+# Server-generated daily rate-limit counter.
+.rate_limit.json
